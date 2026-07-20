@@ -937,23 +937,24 @@ function makeResolver(graph) {
   const add = (index, key, n) => {
     if (!key)
       return;
+    let widgets = index.get(key);
+    if (!widgets) {
+      widgets = new Map;
+      index.set(key, widgets);
+    }
     for (const w of n.widgets ?? []) {
       const name = (w?.name ?? "").trim();
       if (!name)
         continue;
-      const k = `${key} ${name}`;
-      if (!index.has(k))
-        index.set(k, String(w?.value ?? ""));
+      if (!widgets.has(name))
+        widgets.set(name, String(w?.value ?? ""));
     }
   };
   for (const n of nodes)
     add(bySr, srName(n), n);
   for (const n of nodes)
     add(byTitle, effectiveTitle(n), n);
-  return (nodeName, widgetName) => {
-    const k = `${nodeName} ${widgetName}`;
-    return bySr.get(k) ?? byTitle.get(k);
-  };
+  return (nodeName, widgetName) => bySr.get(nodeName)?.get(widgetName) ?? byTitle.get(nodeName)?.get(widgetName);
 }
 var STATIC_TOKENS = [
   { token: "%date:yyyy-MM-dd%", label: "Date (2026-07-20)", scope: "frontend" },

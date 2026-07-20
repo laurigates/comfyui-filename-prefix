@@ -157,6 +157,19 @@ describe("makeResolver", () => {
       expect(makeResolver(g)("target", "v")).toBe("from-sr");
     });
 
+    it("does not confuse a spaced title with a spaced lookup", () => {
+      // Guards the nested-map keying: a joined "title widget" key would let
+      // node "a b" / widget "c" collide with node "a" / widget "b c".
+      const g = {
+        _nodes: [
+          { title: "a b", widgets: [{ name: "c", value: "correct" }] },
+          { title: "a", widgets: [{ name: "b c", value: "wrong" }] },
+        ],
+      };
+      expect(makeResolver(g)("a b", "c")).toBe("correct");
+      expect(makeResolver(g)("a", "b c")).toBe("wrong");
+    });
+
     it("falls back to the title when no S&R name matches", () => {
       const g = {
         _nodes: [

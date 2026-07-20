@@ -137,27 +137,35 @@ export function makeResolver(
   // filters nodes by the `Node name for S&R` property and only falls back to
   // `title` if that yields nothing. Merging them would let a title match win
   // over an S&R match and silently disagree with the real substitution.
-  const bySr = new Map<string, string>();
-  const byTitle = new Map<string, string>();
+  //
+  // Each is nested (node -> widget -> value) rather than keyed by a joined
+  // string. Node titles routinely contain spaces, so any single-character
+  // separator risks a collision, and reaching for an exotic one invites
+  // writing a literal control byte into the source (which silently turns this
+  // file binary — it happened once already).
+  const bySr = new Map<string, Map<string, string>>();
+  const byTitle = new Map<string, Map<string, string>>();
 
-  const add = (index: Map<string, string>, key: string, n: GraphNodeLike): void => {
+  const add = (index: Map<string, Map<string, string>>, key: string, n: GraphNodeLike): void => {
     if (!key) return;
+    let widgets = index.get(key);
+    if (!widgets) {
+      widgets = new Map<string, string>();
+      index.set(key, widgets);
+    }
     for (const w of n.widgets ?? []) {
       const name = (w?.name ?? "").trim();
       if (!name) continue;
-      const k = `${key} ${name}`;
       // First writer wins — the frontend takes the first of multiple matches.
-      if (!index.has(k)) index.set(k, String(w?.value ?? ""));
+      if (!widgets.has(name)) widgets.set(name, String(w?.value ?? ""));
     }
   };
 
   for (const n of nodes) add(bySr, srName(n), n);
   for (const n of nodes) add(byTitle, effectiveTitle(n), n);
 
-  return (nodeName, widgetName) => {
-    const k = `${nodeName} ${widgetName}`;
-    return bySr.get(k) ?? byTitle.get(k);
-  };
+  return (nodeName, widgetName) =>
+    bySr.get(nodeName)?.get(widgetName) ?? byTitle.get(nodeName)?.get(widgetName);
 }
 
 /** The date/builtin tokens, offered alongside the graph variables. */
