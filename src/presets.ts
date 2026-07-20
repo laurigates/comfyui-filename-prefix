@@ -120,8 +120,14 @@ export async function savePresets(store: SettingsStore, presets: Preset[]): Prom
 export const STARTER_PRESETS: Preset[] = [
   { name: "dated folder", value: "%date:yyyy-MM-dd%/ComfyUI" },
   {
-    name: "dated + sampler + seed",
-    value: "%date:yyyy-MM-dd%/%date:hhmmss%_%KSampler.sampler_name%_s%KSampler.seed%",
+    // The "run signature" shape: one folder per day, time first so a plain
+    // name-sort is creation-order, then the three values that actually
+    // distinguish one run from the next. Sampler WITHOUT scheduler is the
+    // common near-miss — the same sampler on a different schedule is a
+    // different image, so both belong in the name.
+    name: "run signature (dated, sampler + scheduler + seed)",
+    value:
+      "%date:yyyy-MM-dd%/%date:hhmmss%_%KSampler.sampler_name%_%KSampler.scheduler%_s%KSampler.seed%",
   },
   { name: "flat timestamped", value: "ComfyUI_%date:yyyy-MM-dd_hh-mm-ss%" },
 ];

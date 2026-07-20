@@ -691,8 +691,8 @@ async function savePresets(store, presets) {
 var STARTER_PRESETS = [
   { name: "dated folder", value: "%date:yyyy-MM-dd%/ComfyUI" },
   {
-    name: "dated + sampler + seed",
-    value: "%date:yyyy-MM-dd%/%date:hhmmss%_%KSampler.sampler_name%_s%KSampler.seed%"
+    name: "run signature (dated, sampler + scheduler + seed)",
+    value: "%date:yyyy-MM-dd%/%date:hhmmss%_%KSampler.sampler_name%_%KSampler.scheduler%_s%KSampler.seed%"
   },
   { name: "flat timestamped", value: "ComfyUI_%date:yyyy-MM-dd_hh-mm-ss%" }
 ];
@@ -720,6 +720,24 @@ function formatDate(pattern, now) {
 }
 var TOKEN_RE = /%([^%]+)%/g;
 var BUILTINS = new Set(["width", "height", "year", "month", "day", "hour", "minute", "second"]);
+function splitNodeRef(inner) {
+  const parts = inner.split(".");
+  if (parts.length !== 2)
+    return null;
+  const [node, widget] = parts;
+  if (!node || !widget)
+    return null;
+  return [node, widget];
+}
+var SUBST_ILLEGAL = new Set(["/", "?", "<", ">", "\\", ":", "*", "|", '"']);
+function sanitizeSubstitution(value) {
+  let out = "";
+  for (const ch of value) {
+    const c = ch.codePointAt(0) ?? 0;
+    out += SUBST_ILLEGAL.has(ch) || c < 32 || c === 127 ? "_" : ch;
+  }
+  return out;
+}
 function parseTokens(prefix) {
   const out = [];
   for (const m of prefix.matchAll(TOKEN_RE)) {
@@ -732,16 +750,10 @@ function parseTokens(prefix) {
     } else if (BUILTINS.has(inner)) {
       out.push({ raw: m[0], kind: "builtin", target: inner, index });
     } else {
-      const dot = inner.lastIndexOf(".");
-      if (dot <= 0 || dot === inner.length - 1)
+      const parts = splitNodeRef(inner);
+      if (!parts)
         continue;
-      out.push({
-        raw: m[0],
-        kind: "widget",
-        target: inner.slice(0, dot),
-        widget: inner.slice(dot + 1),
-        index
-      });
+      out.push({ raw: m[0], kind: "widget", target: parts[0], widget: parts[1], index });
     }
   }
   return out;
@@ -781,17 +793,36 @@ function renderPrefix(prefix, opts = {}) {
         return v;
       return opts.keepUnresolved ? raw : `?${inner}?`;
     }
-    const dot = inner.lastIndexOf(".");
-    if (dot > 0 && dot < inner.length - 1) {
-      const v = opts.resolveWidget?.(inner.slice(0, dot), inner.slice(dot + 1));
+    const parts = splitNodeRef(inner);
+    if (parts) {
+      const v = opts.resolveWidget?.(parts[0], parts[1]);
       if (v !== undefined && v !== "")
-        return v;
+        return sanitizeSubstitution(v);
     }
     return opts.keepUnresolved ? raw : `?${inner}?`;
   });
 }
 function unresolvedTokens(prefix, resolve) {
   return parseTokens(prefix).filter((t) => t.kind === "widget" && resolve(t.target, t.widget ?? "") === undefined);
+}
+var EXT_RE = /\.(jpe?g|png|webp|gif|bmp|tiff?|mp4|webm|mov|safetensors|ckpt|pt|pth|bin|gguf)$/i;
+function lintResolved(prefix, resolve) {
+  const problems = [];
+  for (const t of parseTokens(prefix)) {
+    if (t.kind !== "widget")
+      continue;
+    const value = resolve(t.target, t.widget ?? "");
+    if (value === undefined || value === "")
+      continue;
+    if (EXT_RE.test(value)) {
+      problems.push(`${t.raw} resolves to "${value}" — the file extension will appear in the middle of the name.`);
+    }
+    const sanitized = sanitizeSubstitution(value);
+    if (sanitized !== value) {
+      problems.push(`${t.raw} resolves to "${value}", which ComfyUI rewrites to "${sanitized}".`);
+    }
+  }
+  return problems;
 }
 var ILLEGAL_RE = /[<>:"\\|?*]/g;
 var hasControlChar = (s) => {
@@ -826,6 +857,10 @@ function lintPrefix(prefix) {
 }
 
 // src/variables.ts
+function srName(node) {
+  const v = node.properties?.["Node name for S&R"];
+  return typeof v === "string" ? v.trim() : "";
+}
 function effectiveTitle(node) {
   const t = (node.title ?? "").trim();
   return t !== "" ? t : (node.type ?? "").trim();
@@ -896,21 +931,29 @@ function collectVariables(graph) {
   });
 }
 function makeResolver(graph) {
-  const index = new Map;
-  for (const n of nodesOf(graph)) {
-    const t = effectiveTitle(n);
-    if (!t)
-      continue;
+  const nodes = nodesOf(graph);
+  const bySr = new Map;
+  const byTitle = new Map;
+  const add = (index, key, n) => {
+    if (!key)
+      return;
     for (const w of n.widgets ?? []) {
       const name = (w?.name ?? "").trim();
       if (!name)
         continue;
-      const key = `${t}\x00${name}`;
-      if (!index.has(key))
-        index.set(key, String(w?.value ?? ""));
+      const k = `${key} ${name}`;
+      if (!index.has(k))
+        index.set(k, String(w?.value ?? ""));
     }
-  }
-  return (nodeTitle, widgetName) => index.get(`${nodeTitle}\x00${widgetName}`);
+  };
+  for (const n of nodes)
+    add(bySr, srName(n), n);
+  for (const n of nodes)
+    add(byTitle, effectiveTitle(n), n);
+  return (nodeName, widgetName) => {
+    const k = `${nodeName} ${widgetName}`;
+    return bySr.get(k) ?? byTitle.get(k);
+  };
 }
 var STATIC_TOKENS = [
   { token: "%date:yyyy-MM-dd%", label: "Date (2026-07-20)", scope: "frontend" },
@@ -1000,7 +1043,7 @@ function openPicker(widget, node) {
   function refreshPreview() {
     const rendered = renderPrefix(draft, { resolveWidget });
     preview.textContent = rendered ? `${rendered}_00001_.png` : "—";
-    const problems = lintPrefix(draft);
+    const problems = [...lintPrefix(draft), ...lintResolved(draft, resolveWidget)];
     const dangling = unresolvedTokens(draft, resolveWidget);
     if (dangling.length) {
       problems.push(`Not in this workflow: ${dangling.map((t) => t.raw).join(", ")} — will be written literally.`);

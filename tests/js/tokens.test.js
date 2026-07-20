@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   formatDate,
   lintPrefix,
+  lintResolved,
   parseTokens,
   renderPrefix,
+  sanitizeSubstitution,
   unresolvedTokens,
 } from "../../src/tokens.ts";
 
@@ -50,10 +52,13 @@ describe("parseTokens", () => {
     expect(toks[2]).toMatchObject({ target: "KSampler", widget: "seed" });
   });
 
-  it("splits a node reference on the LAST dot, so dotted node titles survive", () => {
-    // "Wan 2.2 sampler" is a realistic retitle and contains a dot.
-    const [tok] = parseTokens("%Wan 2.2 sampler.sampler_name%");
-    expect(tok).toMatchObject({ target: "Wan 2.2 sampler", widget: "sampler_name" });
+  it("rejects a dotted node title, because the frontend requires exactly two parts", () => {
+    // Verified against `applyTextReplacements`: `t.split(".")` followed by
+    // `if (r.length !== 2) return …`. So "Wan 2.2 sampler" — a realistic
+    // retitle — is UNREFERENCEABLE; ComfyUI leaves the token literal and warns
+    // "Invalid replacement pattern". Claiming otherwise would make the preview
+    // promise a filename the user never gets.
+    expect(parseTokens("%Wan 2.2 sampler.sampler_name%")).toEqual([]);
   });
 
   it("ignores a token with no dot at all (not a node reference)", () => {
@@ -118,6 +123,67 @@ describe("renderPrefix — backend builtins", () => {
     expect(renderPrefix("%width%x%height%", { now: NOW, width: 1024, height: 768 })).toBe(
       "1024x768",
     );
+  });
+});
+
+describe("sanitizeSubstitution — mirrors applyTextReplacements", () => {
+  // Verified against the frontend bundle:
+  //   ((o.value ?? "") + "").replaceAll(/[/?<>\\:*|"\x00-\x1F\x7F]/g, "_")
+  it("replaces each illegal character with an underscore", () => {
+    expect(sanitizeSubstitution('a/b?c<d>e\\f:g*h|i"j')).toBe("a_b_c_d_e_f_g_h_i_j");
+  });
+
+  it("collapses a slash rather than creating a subfolder", () => {
+    // Wan's fused scheduler value is literally `dpm++_sde/beta`. A naive
+    // preview would show a `dpm++_sde/` directory that never gets created.
+    expect(sanitizeSubstitution("dpm++_sde/beta")).toBe("dpm++_sde_beta");
+  });
+
+  it("leaves dots alone — which is why extensions survive mid-filename", () => {
+    expect(sanitizeSubstitution("michael.jpg")).toBe("michael.jpg");
+  });
+
+  it("passes an already-clean value through untouched", () => {
+    expect(sanitizeSubstitution("euler_simple")).toBe("euler_simple");
+  });
+});
+
+describe("renderPrefix applies the frontend's sanitization", () => {
+  it("does not let a substituted value introduce a subfolder", () => {
+    const resolve = (n, w) =>
+      n === "high-scheduler" && w === "scheduler" ? "dpm++_sde/beta" : undefined;
+    const out = renderPrefix("%high-scheduler.scheduler%_s1", { resolve, resolveWidget: resolve });
+    expect(out).toBe("dpm++_sde_beta_s1");
+    expect(out).not.toContain("/");
+  });
+});
+
+describe("lintResolved — warnings that depend on the live graph", () => {
+  const resolve = (n, w) =>
+    ({
+      "input-image image": "input/faces/michael.jpg",
+      "seed seed": "123456",
+      "high-scheduler scheduler": "dpm++_sde/beta",
+    })[`${n} ${w}`];
+
+  it("warns that a resolved file extension lands mid-filename", () => {
+    // The real signature: 76 existing outputs look like
+    // `…_input_faces_michael.jpg_final_00001_.png`.
+    const problems = lintResolved("%input-image.image%_final", resolve);
+    expect(problems.join(" ")).toMatch(/extension will appear in the middle/);
+  });
+
+  it("warns when ComfyUI will rewrite the resolved value", () => {
+    const problems = lintResolved("%high-scheduler.scheduler%", resolve);
+    expect(problems.join(" ")).toMatch(/rewrites to "dpm\+\+_sde_beta"/);
+  });
+
+  it("stays quiet for a clean value", () => {
+    expect(lintResolved("%seed.seed%", resolve)).toEqual([]);
+  });
+
+  it("ignores tokens the graph cannot resolve (unresolvedTokens covers those)", () => {
+    expect(lintResolved("%nope.thing%", resolve)).toEqual([]);
   });
 });
 

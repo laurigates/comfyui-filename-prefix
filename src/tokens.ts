@@ -83,6 +83,43 @@ const TOKEN_RE = /%([^%]+)%/g;
 
 const BUILTINS = new Set(["width", "height", "year", "month", "day", "hour", "minute", "second"]);
 
+/**
+ * Split `Node.widget`, mirroring the frontend's exactly-two-parts rule.
+ * Returns null when the token is not a usable node reference.
+ */
+function splitNodeRef(inner: string): [string, string] | null {
+  const parts = inner.split(".");
+  if (parts.length !== 2) return null;
+  const [node, widget] = parts;
+  if (!node || !widget) return null;
+  return [node, widget];
+}
+
+// Characters the frontend replaces with `_` INSIDE A SUBSTITUTED VALUE.
+// Verified against `applyTextReplacements` in the frontend bundle:
+//   ((o.value ?? "") + "").replaceAll(/[/?<>\\:*|"\x00-\x1F\x7F]/g, "_")
+// Two consequences worth knowing:
+//   `.` is NOT replaced — `%LoadImage.image%` yields `photo.jpg`, landing a
+//   file extension in the middle of the output filename.
+//   `/` IS replaced — a substituted value can never create a subfolder; only a
+//   literal `/` typed into the template can.
+const SUBST_ILLEGAL = new Set(["/", "?", "<", ">", "\\", ":", "*", "|", '"']);
+
+/**
+ * Apply the frontend's own sanitization to a substituted widget value. The
+ * preview MUST do this or it disagrees with the real filename — e.g. Wan's
+ * fused scheduler value `dpm++_sde/beta` renders as `dpm++_sde_beta`, not as
+ * a `dpm++_sde/` subfolder.
+ */
+export function sanitizeSubstitution(value: string): string {
+  let out = "";
+  for (const ch of value) {
+    const c = ch.codePointAt(0) ?? 0;
+    out += SUBST_ILLEGAL.has(ch) || c < 0x20 || c === 0x7f ? "_" : ch;
+  }
+  return out;
+}
+
 /** Parse every token in a prefix. Used by both the preview and the linter. */
 export function parseTokens(prefix: string): TokenRef[] {
   const out: TokenRef[] = [];
@@ -95,18 +132,14 @@ export function parseTokens(prefix: string): TokenRef[] {
     } else if (BUILTINS.has(inner)) {
       out.push({ raw: m[0], kind: "builtin", target: inner, index });
     } else {
-      // `%Node Title.widget%` — split on the LAST dot, since node titles may
-      // legitimately contain dots (e.g. "Wan 2.2 sampler") but widget names
-      // never do.
-      const dot = inner.lastIndexOf(".");
-      if (dot <= 0 || dot === inner.length - 1) continue; // not a valid ref
-      out.push({
-        raw: m[0],
-        kind: "widget",
-        target: inner.slice(0, dot),
-        widget: inner.slice(dot + 1),
-        index,
-      });
+      // `%Node.widget%` — the frontend does `t.split(".")` and requires
+      // EXACTLY two parts (`if (r.length !== 2) …`). So a node title containing
+      // a dot ("Wan 2.2 sampler") is unreferenceable: the token is left literal
+      // and the console warns "Invalid replacement pattern". Splitting on the
+      // last dot would make the preview claim such a token works when it does not.
+      const parts = splitNodeRef(inner);
+      if (!parts) continue; // not a valid reference
+      out.push({ raw: m[0], kind: "widget", target: parts[0], widget: parts[1], index });
     }
   }
   return out;
@@ -151,10 +184,12 @@ export function renderPrefix(prefix: string, opts: RenderOptions = {}): string {
       if (v !== undefined) return v;
       return opts.keepUnresolved ? raw : `?${inner}?`;
     }
-    const dot = inner.lastIndexOf(".");
-    if (dot > 0 && dot < inner.length - 1) {
-      const v = opts.resolveWidget?.(inner.slice(0, dot), inner.slice(dot + 1));
-      if (v !== undefined && v !== "") return v;
+    const parts = splitNodeRef(inner);
+    if (parts) {
+      const v = opts.resolveWidget?.(parts[0], parts[1]);
+      // Sanitize exactly as the frontend does, or the preview shows a filename
+      // the user will never actually get.
+      if (v !== undefined && v !== "") return sanitizeSubstitution(v);
     }
     return opts.keepUnresolved ? raw : `?${inner}?`;
   });
@@ -170,6 +205,38 @@ export function unresolvedTokens(prefix: string, resolve: WidgetResolver): Token
   return parseTokens(prefix).filter(
     (t) => t.kind === "widget" && resolve(t.target, t.widget ?? "") === undefined,
   );
+}
+
+// Extensions common enough in widget values (image pickers, model loaders)
+// that seeing one mid-filename is almost never intended.
+const EXT_RE = /\.(jpe?g|png|webp|gif|bmp|tiff?|mp4|webm|mov|safetensors|ckpt|pt|pth|bin|gguf)$/i;
+
+/**
+ * Warnings that depend on what the tokens RESOLVE to, not on the template.
+ * Separate from `lintPrefix` because these need the live graph.
+ *
+ * The motivating case is real and common: `%LoadImage.image%` returns the bare
+ * filename *including* its extension, so a prefix ending in it produces
+ * `…_photo.jpg_00001_.png` — the extension lands mid-name. Observed on 76
+ * existing outputs before this check existed.
+ */
+export function lintResolved(prefix: string, resolve: WidgetResolver): string[] {
+  const problems: string[] = [];
+  for (const t of parseTokens(prefix)) {
+    if (t.kind !== "widget") continue;
+    const value = resolve(t.target, t.widget ?? "");
+    if (value === undefined || value === "") continue;
+    if (EXT_RE.test(value)) {
+      problems.push(
+        `${t.raw} resolves to "${value}" — the file extension will appear in the middle of the name.`,
+      );
+    }
+    const sanitized = sanitizeSubstitution(value);
+    if (sanitized !== value) {
+      problems.push(`${t.raw} resolves to "${value}", which ComfyUI rewrites to "${sanitized}".`);
+    }
+  }
+  return problems;
 }
 
 /** Filename characters that are illegal or hostile across platforms. */

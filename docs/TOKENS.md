@@ -9,8 +9,15 @@ confusing behaviour.
 
 | Pass | Runs in | When | Tokens |
 |---|---|---|---|
-| **Frontend** | `comfyui-frontend-package` | At prompt submit, before the graph reaches the server | `%date:<fmt>%`, `%<Node Title>.<widget>%` |
+| **Frontend** | `applyTextReplacements` | At prompt submit, before the graph reaches the server | `%date:<fmt>%`, `%<Node>.<widget>%` |
 | **Backend** | `folder_paths.get_save_image_path` | At save time, once the image exists | `%width%` `%height%` `%year%` `%month%` `%day%` `%hour%` `%minute%` `%second%` |
+
+**The frontend pass is opt-in per save node.** `applyTextReplacements` runs
+only because a save node wraps its widget's `serializeValue` to call it — core
+`SaveImage` does, and VHS does it in `VHS.core.js`. A save node that does *not*
+opt in leaves a literal `%Node.widget%` in the filename. Grepping
+`folder_paths.py` alone suggests the whole feature is unimplemented; it isn't,
+it just lives in the frontend.
 
 Consequences worth knowing:
 
@@ -52,11 +59,17 @@ Two quirks, mirrored deliberately by this pack:
 Any character that is not a format token is copied verbatim, so `-`, `_`, `/`
 and `.` are all safe separators.
 
-## Node reference (`%<Node Title>.<widget>%`)
+## Node reference (`%<Node>.<widget>%`)
 
-Frontend-side. Matches on the node's **displayed title**: the custom title if
-you renamed the node, otherwise its class name (`KSampler`,
-`Empty Latent Image`).
+Frontend-side. Node matching has a **precedence order** that is easy to get
+wrong:
+
+1. Nodes whose `Node name for S&R` property equals the name — this defaults to
+   the node's class, and **survives a retitle**.
+2. Only if that matches nothing, nodes whose **title** equals the name.
+
+So a `KSampler` you renamed to `my sampler` is reachable as *both*
+`%KSampler.seed%` and `%my sampler.seed%`.
 
 ```
 %Empty Latent Image.width%     → the class name, no rename needed
@@ -67,10 +80,25 @@ Practical notes:
 
 - **Retitle the nodes you reference.** `%wan-sampler-high.sampler%` is far
   more readable than the class name, and survives adding a second sampler.
-- **Duplicate titles are ambiguous.** Two nodes with the same title resolve to
-  whichever ComfyUI finds first. The builder badges these `duplicate title`.
-- **The title is split on the last dot**, so a title containing a dot
-  (`Wan 2.2 sampler`) still works.
+- **Duplicate names are ambiguous.** Multiple matches resolve to the first;
+  the frontend warns in the console. The builder badges these `duplicate title`.
+- **The name is split on `.` and must yield exactly two parts.** A node title
+  containing a dot (`Wan 2.2 sampler`) is therefore **unreferenceable** — the
+  token stays literal and the console warns `Invalid replacement pattern`.
+  Keep referenced titles dot-free.
+
+### Substituted values are sanitized
+
+The resolved value has `/ ? < > \ : * | "` and control characters each replaced
+with `_` before it is spliced in. Two consequences:
+
+- **A substituted value can never create a subfolder.** Wan's fused scheduler
+  value `dpm++_sde/beta` lands as `dpm++_sde_beta`. Only a literal `/` typed
+  into the template makes a directory.
+- **`.` is *not* sanitized**, so `%LoadImage.image%` yields `photo.jpg` and
+  puts a file extension in the middle of the name:
+  `…_photo.jpg_final_00001_.png`. The builder warns when a token resolves to a
+  value ending in a known extension.
 
 ## Subfolders
 
