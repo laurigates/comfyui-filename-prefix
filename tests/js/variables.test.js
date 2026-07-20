@@ -122,4 +122,65 @@ describe("makeResolver", () => {
   it("survives a null graph", () => {
     expect(makeResolver(null)("a", "b")).toBeUndefined();
   });
+
+  // The frontend filters by `properties["Node name for S&R"]` FIRST and only
+  // falls back to `title`. A resolver that checks title first would disagree
+  // with the real substitution whenever the two keys point at different nodes.
+  describe("Node name for S&R precedence", () => {
+    it("resolves by the S&R property even after the node is retitled", () => {
+      const g = {
+        _nodes: [
+          {
+            title: "my sampler",
+            type: "KSampler",
+            properties: { "Node name for S&R": "KSampler" },
+            widgets: [{ name: "seed", value: 42 }],
+          },
+        ],
+      };
+      // Reachable by BOTH keys: S&R name and the custom title.
+      expect(makeResolver(g)("KSampler", "seed")).toBe("42");
+      expect(makeResolver(g)("my sampler", "seed")).toBe("42");
+    });
+
+    it("prefers the S&R match over a title match on a different node", () => {
+      const g = {
+        _nodes: [
+          {
+            title: "unrelated",
+            properties: { "Node name for S&R": "target" },
+            widgets: [{ name: "v", value: "from-sr" }],
+          },
+          { title: "target", widgets: [{ name: "v", value: "from-title" }] },
+        ],
+      };
+      expect(makeResolver(g)("target", "v")).toBe("from-sr");
+    });
+
+    it("does not confuse a spaced title with a spaced lookup", () => {
+      // Guards the nested-map keying: a joined "title widget" key would let
+      // node "a b" / widget "c" collide with node "a" / widget "b c".
+      const g = {
+        _nodes: [
+          { title: "a b", widgets: [{ name: "c", value: "correct" }] },
+          { title: "a", widgets: [{ name: "b c", value: "wrong" }] },
+        ],
+      };
+      expect(makeResolver(g)("a b", "c")).toBe("correct");
+      expect(makeResolver(g)("a", "b c")).toBe("wrong");
+    });
+
+    it("falls back to the title when no S&R name matches", () => {
+      const g = {
+        _nodes: [
+          {
+            title: "seed",
+            properties: { "Node name for S&R": "PrimitiveInt" },
+            widgets: [{ name: "seed", value: 7 }],
+          },
+        ],
+      };
+      expect(makeResolver(g)("seed", "seed")).toBe("7");
+    });
+  });
 });

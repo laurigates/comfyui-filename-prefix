@@ -88,7 +88,7 @@ describe("upsertPreset / removePreset", () => {
 
 describe("suggestName", () => {
   it("strips tokens down to the literal stem", () => {
-    expect(suggestName("nsfw/%date:yyyy-MM-dd%/%date:hhmmss%_%seed.seed%")).toBe("nsfw");
+    expect(suggestName("renders/%date:yyyy-MM-dd%/%date:hhmmss%_%seed.seed%")).toBe("renders");
     // The trailing separator is dropped too — it only existed to join the
     // token that was just removed.
     expect(suggestName("ComfyUI_%date:yyyy%")).toBe("ComfyUI");

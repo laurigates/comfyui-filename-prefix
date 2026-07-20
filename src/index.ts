@@ -19,7 +19,7 @@ import {
   suggestName,
   upsertPreset,
 } from "./presets.js";
-import { lintPrefix, renderPrefix, unresolvedTokens } from "./tokens.js";
+import { lintPrefix, lintResolved, renderPrefix, unresolvedTokens } from "./tokens.js";
 import {
   collectVariables,
   type GraphLike,
@@ -148,7 +148,7 @@ function openPicker(widget: PatchedWidget, node: PatchedNode | null): void {
   function refreshPreview(): void {
     const rendered = renderPrefix(draft, { resolveWidget });
     preview.textContent = rendered ? `${rendered}_00001_.png` : "—";
-    const problems = lintPrefix(draft);
+    const problems = [...lintPrefix(draft), ...lintResolved(draft, resolveWidget)];
     const dangling = unresolvedTokens(draft, resolveWidget);
     if (dangling.length) {
       problems.push(

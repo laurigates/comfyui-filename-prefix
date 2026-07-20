@@ -41,9 +41,9 @@ read live from the graph. Tap `wan-sampler-high › sampler` to insert
 you'll actually get, resolved against current widget values:
 
 ```
-nsfw/%date:yyyy-MM-dd%/%date:hhmmss%_%wan-sampler-high.sampler%_s%seed.seed%
+renders/%date:yyyy-MM-dd%/%date:hhmmss%_%wan-sampler-high.sampler%_s%seed.seed%
     ↓
-nsfw/2026-07-05/143052_euler_s123456_00001_.png
+renders/2026-07-05/143052_euler_s123456_00001_.png
 ```
 
 **Presets** — save a prefix you like and pick it in one tap on the next
