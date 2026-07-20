@@ -22,7 +22,7 @@ wheels = [
 
 [[package]]
 name = "comfyui-filename-prefix"
-version = "0.1.1"
+version = "0.1.2"
 source = { virtual = "." }
 dependencies = [
     { name = "comfyui-frontend-package" },
