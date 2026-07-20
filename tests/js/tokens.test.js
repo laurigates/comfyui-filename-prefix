@@ -66,11 +66,13 @@ describe("parseTokens", () => {
   });
 });
 
-describe("renderPrefix — the user's real popos prefix", () => {
-  // Verbatim from the workflows on popos. This is the shape the pack exists
-  // to make one-tap, so it is the load-bearing golden case.
+describe("renderPrefix — a full production-shaped prefix", () => {
+  // Modelled on a real, in-use prefix: a bucket, a dated folder, then a run
+  // signature (time, sampler, scheduler, seed, descriptor). Only the bucket
+  // name is genericized. This is the shape the pack exists to make one-tap,
+  // so it is the load-bearing golden case.
   const REAL =
-    "nsfw/%date:yyyy-MM-dd%/%date:hhmmss%_%wan-sampler-high.sampler%" +
+    "renders/%date:yyyy-MM-dd%/%date:hhmmss%_%wan-sampler-high.sampler%" +
     "_%wan-sampler-high.scheduler%_s%seed.seed%_%steps.value%steps";
 
   const resolveWidget = (node, widget) =>
@@ -83,7 +85,7 @@ describe("renderPrefix — the user's real popos prefix", () => {
 
   it("renders exactly the filename layout seen in the output directory", () => {
     expect(renderPrefix(REAL, { now: NOW, resolveWidget })).toBe(
-      "nsfw/2026-07-05/143052_euler_simple_s123456_20steps",
+      "renders/2026-07-05/143052_euler_simple_s123456_20steps",
     );
   });
 
@@ -140,7 +142,7 @@ describe("sanitizeSubstitution — mirrors applyTextReplacements", () => {
   });
 
   it("leaves dots alone — which is why extensions survive mid-filename", () => {
-    expect(sanitizeSubstitution("michael.jpg")).toBe("michael.jpg");
+    expect(sanitizeSubstitution("photo.jpg")).toBe("photo.jpg");
   });
 
   it("passes an already-clean value through untouched", () => {
@@ -161,14 +163,14 @@ describe("renderPrefix applies the frontend's sanitization", () => {
 describe("lintResolved — warnings that depend on the live graph", () => {
   const resolve = (n, w) =>
     ({
-      "input-image image": "input/faces/michael.jpg",
+      "input-image image": "input/faces/photo.jpg",
       "seed seed": "123456",
       "high-scheduler scheduler": "dpm++_sde/beta",
     })[`${n} ${w}`];
 
   it("warns that a resolved file extension lands mid-filename", () => {
     // The real signature: 76 existing outputs look like
-    // `…_input_faces_michael.jpg_final_00001_.png`.
+    // `…_input_faces_photo.jpg_final_00001_.png`.
     const problems = lintResolved("%input-image.image%_final", resolve);
     expect(problems.join(" ")).toMatch(/extension will appear in the middle/);
   });
@@ -188,10 +190,10 @@ describe("lintResolved — warnings that depend on the live graph", () => {
 });
 
 describe("lintPrefix", () => {
-  it("accepts every real prefix found on popos", () => {
+  it("accepts every prefix shape seen in real-world use", () => {
     const real = [
       "WanVideoWrapper_I2V",
-      "nsfw/%date:yyyy-MM-dd%/%date:hhmmss%_%seed.seed%",
+      "renders/%date:yyyy-MM-dd%/%date:hhmmss%_%seed.seed%",
       "wan-mmaudio/wan-mmaudio",
       "ComfyUI_%date:yyyy-MM-dd_hh-mm-ss%",
       "klein-distilled-i2i-pid4k",

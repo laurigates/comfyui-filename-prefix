@@ -88,8 +88,8 @@ export function suggestName(prefix: string): string {
       seg
         .replace(/[^A-Za-z0-9_-]+/g, " ")
         // Separators left dangling where a token used to be carry no meaning
-        // in a name ("nsfw/%date%/%time%_%seed%" should suggest "nsfw", not
-        // "nsfw _").
+        // in a name ("renders/%date%/%time%_%seed%" should suggest "renders", not
+        // "renders _").
         .replace(/^[\s_-]+|[\s_-]+$/g, "")
         .trim(),
     )

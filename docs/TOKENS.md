@@ -105,7 +105,7 @@ with `_` before it is spliced in. Two consequences:
 A `/` in the prefix creates a subfolder under `output/`:
 
 ```
-nsfw/%date:yyyy-MM-dd%/%date:hhmmss%_%seed.seed%
+renders/%date:yyyy-MM-dd%/%date:hhmmss%_%seed.seed%
 └─ folder ─┘└── dated folder ──┘└─── filename ───┘
 ```
 
@@ -121,13 +121,13 @@ example so the final shape is clear.
 ## Worked example
 
 ```
-nsfw/%date:yyyy-MM-dd%/%date:hhmmss%_%wan-sampler-high.sampler%_%wan-sampler-high.scheduler%_s%seed.seed%_%steps.value%steps
+renders/%date:yyyy-MM-dd%/%date:hhmmss%_%wan-sampler-high.sampler%_%wan-sampler-high.scheduler%_s%seed.seed%_%steps.value%steps
 ```
 
-renders to
+produces
 
 ```
-nsfw/2026-07-05/143052_euler_simple_s123456_20steps_00001_.png
+renders/2026-07-05/143052_euler_simple_s123456_20steps_00001_.png
 ```
 
 This is the pattern the pack's golden test is pinned to.
