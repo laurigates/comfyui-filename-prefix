@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/laurigates/comfyui-filename-prefix/compare/comfyui-filename-prefix-v0.1.2...comfyui-filename-prefix-v0.1.3) (2026-07-20)
+
+
+### Bug Fixes
+
+* keep uv.lock's self-version in sync via release-please extra-files ([#5](https://github.com/laurigates/comfyui-filename-prefix/issues/5)) ([b074d31](https://github.com/laurigates/comfyui-filename-prefix/commit/b074d31eaceaf1a8ead4f115abc5cf4574537691))
+
 ## [0.1.2](https://github.com/laurigates/comfyui-filename-prefix/compare/comfyui-filename-prefix-v0.1.1...comfyui-filename-prefix-v0.1.2) (2026-07-20)
 
 
