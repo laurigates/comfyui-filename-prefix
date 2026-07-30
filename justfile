@@ -54,6 +54,12 @@ check: typecheck build lint test
 # Rasterize icon.svg + banner.svg to the PNGs the registry serves (commit them).
 [group: "assets"]
 assets:
+    # Placeholder gate: the scaffold ships a letter-initial glyph so the SVGs are
+    # valid from commit one, but no pack may PUBLISH it — pyproject already points
+    # Icon/Banner at the PNGs this recipe writes, so a forgotten placeholder ships
+    # a generic letter tile to registry.comfy.org (nearly happened on
+    # comfyui-output-swap). Draw the bespoke pictogram, delete the marker comment.
+    grep -q 'PLACEHOLDER-GLYPH' icon.svg banner.svg && { echo "icon.svg/banner.svg still carry the PLACEHOLDER-GLYPH marker — replace the letter glyph with a bespoke pictogram (family spec: #ffb02e line-art on the dark tile) and delete the marker comment before rasterizing."; exit 1; } || true
     rsvg-convert -w 400 -h 400 icon.svg -o icon.png
     rsvg-convert -w 1344 -h 576 banner.svg -o banner.png
     # Consistency gate: the family tile must trim to 346x346+27+27 on a 400x400
