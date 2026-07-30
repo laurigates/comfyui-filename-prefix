@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/laurigates/comfyui-filename-prefix/compare/comfyui-filename-prefix-v0.1.3...comfyui-filename-prefix-v0.1.4) (2026-07-30)
+
+
+### Bug Fixes
+
+* **assets:** sync the just assets recipe with the scaffold template ([#11](https://github.com/laurigates/comfyui-filename-prefix/issues/11)) ([e644129](https://github.com/laurigates/comfyui-filename-prefix/commit/e644129583001fdfd2233957761d4a4969df6437))
+
 ## [0.1.3](https://github.com/laurigates/comfyui-filename-prefix/compare/comfyui-filename-prefix-v0.1.2...comfyui-filename-prefix-v0.1.3) (2026-07-20)
 
 
