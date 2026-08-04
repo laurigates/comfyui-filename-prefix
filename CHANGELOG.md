@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/laurigates/comfyui-filename-prefix/compare/comfyui-filename-prefix-v0.1.5...comfyui-filename-prefix-v0.1.6) (2026-08-04)
+
+
+### Bug Fixes
+
+* **modal:** make the picker usable on a phone ([#16](https://github.com/laurigates/comfyui-filename-prefix/issues/16)) ([7cb6cf8](https://github.com/laurigates/comfyui-filename-prefix/commit/7cb6cf870eb3d2dd9d4478f08080a8efff55fecd))
+
 ## [0.1.5](https://github.com/laurigates/comfyui-filename-prefix/compare/comfyui-filename-prefix-v0.1.4...comfyui-filename-prefix-v0.1.5) (2026-08-04)
 
 
