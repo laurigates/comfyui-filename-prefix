@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-filename-prefix"
 description = "Build filename_prefix from live workflow variables, or pick from saved presets."
-version = "0.1.5"
+version = "0.1.6"
 license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.10"
