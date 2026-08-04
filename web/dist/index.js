@@ -1070,8 +1070,12 @@ function ensureStyle() {
   const el = document.createElement("style");
   el.id = STYLE_ID3;
   el.textContent = `
-.cfp-wrap{display:flex;flex-direction:column;gap:10px;min-width:min(96vw,520px)}
+/* No min-width: the DIALOG is the thing allowed to be wide (see the shell's
+   \`width\` option below). A wrapper wider than the body made overflow-x compute
+   to \`auto\`, so the modal panned sideways on a phone. */
+.cfp-wrap{display:flex;flex-direction:column;gap:10px}
 .cfp-input{width:100%;box-sizing:border-box;font-size:16px;padding:10px;border-radius:8px;
+  min-height:44px;
   border:1px solid var(--border-color,#444);background:var(--comfy-input-bg,#222);
   color:var(--input-text,#ddd);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .cfp-preview{font-size:13px;padding:8px 10px;border-radius:8px;background:#0003;
@@ -1079,12 +1083,18 @@ function ensureStyle() {
 .cfp-warn{font-size:13px;color:#fb8;padding:2px 2px}
 .cfp-tabs{display:flex;gap:6px}
 .cfp-tab{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border-color,#444);
-  background:#0002;color:#ccc;font-size:15px;cursor:pointer}
+  background:#0002;color:#ccc;font-size:15px;cursor:pointer;min-height:44px}
 .cfp-tab[aria-selected="true"]{background:#3b6ea5;color:#fff;border-color:#3b6ea5}
-.cfp-list{max-height:44vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  display:flex;flex-direction:column;gap:6px}
+/* Deliberately NOT a scroll container. The shell's .cmp-body is the modal's one
+   scroll region; a nested scroller here competed for the same drag gesture, and
+   its fixed 44vh could not shrink — which is what pushed Apply below the fold. */
+.cfp-list{display:flex;flex-direction:column;gap:6px}
 .cfp-item{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;
-  background:#0002;border:1px solid transparent;cursor:pointer;text-align:left}
+  background:#0002;border:1px solid transparent;cursor:pointer;text-align:left;
+  min-height:44px;width:100%;box-sizing:border-box}
+.cfp-item-btn{flex:1;min-width:0;display:flex;align-items:center;gap:8px;
+  background:none;border:none;color:inherit;font:inherit;text-align:left;
+  cursor:pointer;min-height:44px;padding:0}
 .cfp-item:hover{border-color:#3b6ea5}
 .cfp-item-main{flex:1;min-width:0}
 .cfp-item-title{font-size:15px;color:#eee;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1094,7 +1104,7 @@ function ensureStyle() {
 .cfp-badge.warn{background:#7a4a1a;color:#fd9}
 .cfp-row{display:flex;gap:8px}
 .cfp-btn{padding:10px 14px;border-radius:8px;border:1px solid var(--border-color,#444);
-  background:#0002;color:#ddd;font-size:15px;cursor:pointer;flex:none}
+  background:#0002;color:#ddd;font-size:15px;cursor:pointer;flex:none;min-height:44px}
 .cfp-btn.primary{background:#3b6ea5;border-color:#3b6ea5;color:#fff;flex:1}
 .cfp-btn.danger{background:#0002;color:#e88}
 .cfp-empty{padding:16px;text-align:center;color:#888;font-size:14px}
@@ -1107,6 +1117,8 @@ function el(tag, cls, text) {
     node.className = cls;
   if (text !== undefined)
     node.textContent = text;
+  if (node instanceof HTMLButtonElement)
+    node.type = "button";
   return node;
 }
 function openPicker(widget, node) {
@@ -1118,7 +1130,13 @@ function openPicker(widget, node) {
   let draft = typeof widget.value === "string" ? widget.value : "";
   let mode = "build";
   let presets = [];
-  const modal = openModalShell({ title: "Filename prefix", onClose: () => {} });
+  const modal = openModalShell({
+    title: "Filename prefix",
+    subtitle: node?.title ?? node?.type ?? undefined,
+    showSearch: false,
+    width: "min(560px, calc(100vw - 24px))",
+    onClose: () => {}
+  });
   const wrap = el("div", "cfp-wrap");
   modal.bodyEl.appendChild(wrap);
   const input = el("input", "cfp-input");
@@ -1152,10 +1170,21 @@ function openPicker(widget, node) {
     input.addEventListener(evt, (e) => e.stopPropagation());
   }
   const tabs = el("div", "cfp-tabs");
+  tabs.setAttribute("role", "tablist");
   const buildTab = el("button", "cfp-tab", "Build");
   const presetTab = el("button", "cfp-tab", "Presets");
+  for (const [tab, id] of [
+    [buildTab, "cfp-tab-build"],
+    [presetTab, "cfp-tab-presets"]
+  ]) {
+    tab.setAttribute("role", "tab");
+    tab.id = id;
+    tab.setAttribute("aria-controls", "cfp-panel");
+  }
   tabs.append(buildTab, presetTab);
   const panel = el("div");
+  panel.id = "cfp-panel";
+  panel.setAttribute("role", "tabpanel");
   wrap.append(input, preview, warn, tabs, panel);
   function renderBuild() {
     panel.replaceChildren();
@@ -1220,26 +1249,27 @@ function openPicker(widget, node) {
     if (!presets.length)
       presets = STARTER_PRESETS;
     for (const p of presets) {
-      const row = el("button", "cfp-item");
+      const row = el("div", "cfp-item");
+      const choose = el("button", "cfp-item-btn");
+      choose.setAttribute("aria-label", `Use preset ${p.name}`);
       const main = el("div", "cfp-item-main");
       main.append(el("div", "cfp-item-title", p.name), el("div", "cfp-item-sub", p.value));
-      row.append(main);
+      choose.append(main);
+      choose.addEventListener("click", () => {
+        setDraft(p.value);
+        mode = "build";
+        syncTabs();
+      });
       const del = el("button", "cfp-btn danger", "✕");
       del.setAttribute("aria-label", `Delete preset ${p.name}`);
-      del.addEventListener("click", (e) => {
-        e.stopPropagation();
+      del.addEventListener("click", () => {
         (async () => {
           presets = removePreset(presets, p.name);
           await savePresets(store, presets);
           await renderPresets();
         })();
       });
-      row.appendChild(del);
-      row.addEventListener("click", () => {
-        setDraft(p.value);
-        mode = "build";
-        syncTabs();
-      });
+      row.append(choose, del);
       list.appendChild(row);
     }
   }
@@ -1275,6 +1305,7 @@ function openPicker(widget, node) {
   function syncTabs() {
     buildTab.setAttribute("aria-selected", String(mode === "build"));
     presetTab.setAttribute("aria-selected", String(mode === "presets"));
+    panel.setAttribute("aria-labelledby", mode === "build" ? "cfp-tab-build" : "cfp-tab-presets");
     if (mode === "build")
       renderBuild();
     else
@@ -1303,7 +1334,7 @@ function openPicker(widget, node) {
   const cancel = el("button", "cfp-btn", "Cancel");
   cancel.addEventListener("click", () => modal.close());
   footer.append(apply, cancel);
-  wrap.appendChild(footer);
+  modal.footerEl.appendChild(footer);
   refreshPreview();
   syncTabs();
 }
