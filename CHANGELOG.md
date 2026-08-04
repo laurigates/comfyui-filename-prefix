@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.5](https://github.com/laurigates/comfyui-filename-prefix/compare/comfyui-filename-prefix-v0.1.4...comfyui-filename-prefix-v0.1.5) (2026-08-04)
+
+
+### Bug Fixes
+
+* **deps:** bump @laurigates/comfy-modal-kit ^0.7.0 -&gt; ^0.10.0 ([fd41f4b](https://github.com/laurigates/comfyui-filename-prefix/commit/fd41f4b859e99fe9a24e0fcb342c4d4ca3319822))
+* **deps:** bump @laurigates/comfy-modal-kit to ^0.10.0 (toast-tap dismisses modal) ([#13](https://github.com/laurigates/comfyui-filename-prefix/issues/13)) ([fd41f4b](https://github.com/laurigates/comfyui-filename-prefix/commit/fd41f4b859e99fe9a24e0fcb342c4d4ca3319822))
+
 ## [0.1.4](https://github.com/laurigates/comfyui-filename-prefix/compare/comfyui-filename-prefix-v0.1.3...comfyui-filename-prefix-v0.1.4) (2026-07-30)
 
 
