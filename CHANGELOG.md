@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/laurigates/comfyui-filename-prefix/compare/comfyui-filename-prefix-v0.1.6...comfyui-filename-prefix-v0.1.7) (2026-08-16)
+
+
+### Miscellaneous
+
+* **ci:** guard registry-health against closing on Pending; drop duplicate Renovate runner ([#19](https://github.com/laurigates/comfyui-filename-prefix/issues/19)) ([1c3b1f9](https://github.com/laurigates/comfyui-filename-prefix/commit/1c3b1f9ed2294bf2da95b75337ff81904e0850ff))
+
 ## [0.1.6](https://github.com/laurigates/comfyui-filename-prefix/compare/comfyui-filename-prefix-v0.1.5...comfyui-filename-prefix-v0.1.6) (2026-08-04)
 
 
