@@ -1392,18 +1392,18 @@ function targetsWidget(name) {
   return TARGET_WIDGETS.has(name);
 }
 export {
-  upsertPreset,
-  unresolvedTokens,
-  targetsWidget,
-  suggestName,
-  renderPrefix,
-  removePreset,
-  parseTokens,
-  parsePresets,
-  openPicker,
-  makeResolver,
-  lintPrefix,
-  formatDate,
+  collectVariables,
   enhanceNode,
-  collectVariables
+  formatDate,
+  lintPrefix,
+  makeResolver,
+  openPicker,
+  parsePresets,
+  parseTokens,
+  removePreset,
+  renderPrefix,
+  suggestName,
+  targetsWidget,
+  unresolvedTokens,
+  upsertPreset
 };
