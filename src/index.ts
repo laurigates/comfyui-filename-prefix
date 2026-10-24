@@ -6,6 +6,7 @@
 //
 // Presets persist through ComfyUI's per-user settings store (server-side), so
 // they follow you between phone and desktop. No Python in this pack.
+import type { Settings } from "@comfyorg/comfyui-frontend-types";
 import { fuzzyRank, notify, openModalShell } from "@laurigates/comfy-modal-kit";
 import { app } from "/scripts/app.js";
 import {
@@ -464,7 +465,11 @@ app.registerExtension({
   name: "comfy.filename-prefix",
   settings: [
     {
-      id: PRESETS_SETTING_ID,
+      // `@comfyorg/comfyui-frontend-types` >= 1.59 types setting ids as
+      // `keyof Settings`, a closed `type` alias of the core `Comfy.*` keys that
+      // cannot be augmented, so an extension's own id needs this cast. The
+      // runtime settings store accepts any string id.
+      id: PRESETS_SETTING_ID as keyof Settings,
       name: "Saved filename prefixes",
       type: "hidden",
       defaultValue: [] as Preset[],
