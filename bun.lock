@@ -9,7 +9,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "^2.4.15",
-        "@comfyorg/comfyui-frontend-types": "^1.43.0",
+        "@comfyorg/comfyui-frontend-types": "^1.59.1",
         "jsdom": "^29.1.1",
         "knip": "^5.0.0",
         "typescript": "^5.7.0",
@@ -54,9 +54,9 @@
 
     "@bramus/specificity": ["@bramus/specificity@2.4.2", "", { "dependencies": { "css-tree": "^3.0.0" }, "bin": { "specificity": "bin/cli.js" } }, "sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw=="],
 
-    "@comfyorg/comfyui-desktop-bridge-types": ["@comfyorg/comfyui-desktop-bridge-types@0.1.2", "", {}, "sha512-yU2xerunYGDM+IF8MCrEAQGE2C/9mX8Dec7xAwsMmHUriY1GBhZJO9hjjLmHnSh4O4qTpzfO5AJgo2d0jzdDNA=="],
+    "@comfyorg/comfyui-desktop-bridge-types": ["@comfyorg/comfyui-desktop-bridge-types@0.5.0", "", {}, "sha512-IlLhbbNaDwTw1JjE+7Z2OlejrE4zcfzORJdaF3mtkzSjCFdK+j8Nuf9XYX78S3vz+uqmxXtn35gDR4amHv7shw=="],
 
-    "@comfyorg/comfyui-frontend-types": ["@comfyorg/comfyui-frontend-types@1.45.21", "", { "dependencies": { "@comfyorg/comfyui-desktop-bridge-types": "0.1.2" }, "peerDependencies": { "vue": "^3.5.13", "zod": "^3.23.8" } }, "sha512-n6KcfY2npHkpzTtJNHtwgHRznkD8eSDvc+tmyRGaoGTljQq4R0h/AD6tsw4h28/X7EF4RiuO9zqb4BWLwXOG2Q=="],
+    "@comfyorg/comfyui-frontend-types": ["@comfyorg/comfyui-frontend-types@1.59.1", "", { "dependencies": { "@comfyorg/comfyui-desktop-bridge-types": "0.5.0" }, "peerDependencies": { "vue": "^3.5.42", "zod": "^4.6.5" } }, "sha512-kJ/hp0oy2/pSzc8nLrEQiURl4rLINpOp1Xsygjc4kqJWi3+OqyKek9tGUBFk1mWnP2UWN56XSJreGoXsQyAOTw=="],
 
     "@csstools/color-helpers": ["@csstools/color-helpers@6.1.0", "", {}, "sha512-064IFJdjTfUqnjpCVpMOdbr8FLQBhinbZj6yRv2An2E41O/pLEXqfFRWqGq/SxlE5PEUYTlvWsG2r8MswAVvkg=="],
 
