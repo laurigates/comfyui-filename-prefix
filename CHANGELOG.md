@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.8](https://github.com/laurigates/comfyui-filename-prefix/compare/comfyui-filename-prefix-v0.1.7...comfyui-filename-prefix-v0.1.8) (2026-10-24)
+
+
+### Bug Fixes
+
+* **deps:** bump @laurigates/comfy-modal-kit to ^0.14.0 and rebuild web/dist ([#24](https://github.com/laurigates/comfyui-filename-prefix/issues/24)) ([497efd7](https://github.com/laurigates/comfyui-filename-prefix/commit/497efd702af7fb5d1903fc721d0b5e4f505f824e)), closes [#21](https://github.com/laurigates/comfyui-filename-prefix/issues/21)
+* **types:** move @comfyorg/comfyui-frontend-types to ^1.59.1 ([#26](https://github.com/laurigates/comfyui-filename-prefix/issues/26)) ([bdfa152](https://github.com/laurigates/comfyui-filename-prefix/commit/bdfa152ccb1b524d052603a2701faf2ec145f6b9))
+
 ## [0.1.7](https://github.com/laurigates/comfyui-filename-prefix/compare/comfyui-filename-prefix-v0.1.6...comfyui-filename-prefix-v0.1.7) (2026-08-16)
 
 
