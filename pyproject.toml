@@ -16,7 +16,7 @@ classifiers = [
 
 # Floor tied to widget.onPointerDown availability. Frontend-only pack — no runtime Python deps.
 dependencies = [
-    "comfyui-frontend-package>=1.40.0",
+    "comfyui-frontend-package==1.47.9",
 ]
 
 [project.urls]
@@ -25,11 +25,11 @@ Issues = "https://github.com/laurigates/comfyui-filename-prefix/issues"
 
 [dependency-groups]
 dev = [
-    "ruff>=0.11",
-    "pytest>=8",
-    "pre-commit>=4",
+    "ruff==0.15.22",
+    "pytest==9.1.1",
+    "pre-commit==4.6.0",
     # tests/test_publish_hygiene.py mirrors comfy-cli's .comfyignore matching
-    "pathspec>=0.12",
+    "pathspec==1.1.1",
 ]
 
 [tool.ruff]
