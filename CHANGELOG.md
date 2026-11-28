@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.9](https://github.com/laurigates/comfyui-filename-prefix/compare/comfyui-filename-prefix-v0.1.8...comfyui-filename-prefix-v0.1.9) (2026-11-26)
+
+
+### Miscellaneous
+
+* **claude:** reconcile Claude Code config with the repo baseline ([#32](https://github.com/laurigates/comfyui-filename-prefix/issues/32)) ([e38be3e](https://github.com/laurigates/comfyui-filename-prefix/commit/e38be3ec430d6c28331144e78f2aefd3eed3d216))
+* **deps:** update dependency virtualenv to v21.14.10 [security] ([#34](https://github.com/laurigates/comfyui-filename-prefix/issues/34)) ([4a0cd16](https://github.com/laurigates/comfyui-filename-prefix/commit/4a0cd1654228313cc1d7936c1a3dbdd6670eb56d))
+
 ## [0.1.8](https://github.com/laurigates/comfyui-filename-prefix/compare/comfyui-filename-prefix-v0.1.7...comfyui-filename-prefix-v0.1.8) (2026-10-24)
 
 
